@@ -1,12 +1,11 @@
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
-int main(int argc , char **argv)
-{
-/* Arnold Robbins in the LJ of February ’95, describing RCS */
-	if (argc > 1 && strcmp(argv[1], "-advice") == 0) {
-		printf("Don’t Panic!\n");
-		return 42;
-	}
-	printf("Need an advice?\n");
-	return 0;
+#include "socket.h"
+int main(){
+	int socket_serveur = creer_serveur(8080);
+	return 1;
 }
