@@ -3,7 +3,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <string.h>
+#include <sys/wait.h>
+
+#include <string.h> 
+#include <unistd.h>
 #include "socket.h"
 int main(){
 	int socket_client, pid;
@@ -27,10 +30,11 @@ int main(){
 			while(read(socket_client, buffer, 256) != -1){
 				if(write(socket_client, buffer, 256)== -1){
 					perror("Erreur write retour");
-		/* traitement d’erreur */
+				/* traitement d’erreur */
 				}
 			}
 		}
+		wait(0);
 	}
 	return 1;
 }
