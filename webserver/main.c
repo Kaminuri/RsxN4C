@@ -35,8 +35,10 @@ int main(){
 				/* traitement d’erreur */
 				}
 			}
+		}else{
+			close(socket_client);
 		}
-		wait(0);
+		waitpid(pid);
 	}
 	return 1;
 }
