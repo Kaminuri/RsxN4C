@@ -9,13 +9,7 @@
 
 int creer_serveur(int port){
 	int socket_serveur;
-	int socket_client, pid;
-	const char *message_bienvenue = "Bonjour, c'est un grand honneur de vous avoir sur notre serveur. Bienvenue à bord !\n";
 	socket_serveur = socket(AF_INET , SOCK_STREAM , 0);
-	message_bienvenue +=0;
-
-
-	
 	if (socket_serveur == -1){
 		perror("socket_serveur");
 		/* traitement de l’erreur */
@@ -37,12 +31,6 @@ int creer_serveur(int port){
 		/* traitement d’erreur */
 	}
 	
-	while((socket_client = accept(socket_serveur , NULL , NULL)) != -1){
-		pid = fork();
-		if(pid == 0){
-			sleep(1);
-			write(socket_client, message_bienvenue, strlen(message_bienvenue));
-		}
-	}
+
 	return socket_serveur;
 }
