@@ -4,11 +4,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
+#include <stdlib.h>
 #include <string.h> 
 #include <unistd.h>
 #include "socket.h"
 int main(){
+	initialiser_signaux();
 	int taille=0;
 	int socket_client, pid;
 	char buffer[256];
@@ -21,24 +22,27 @@ int main(){
 			perror("Erreur fork");
 		/* traitement d’erreur */
 		}
-
 		if(pid == 0){
 			sleep(1);
 			if(write(socket_client, message_bienvenue, strlen(message_bienvenue)) == -1){
 				perror("Erreur write bienvenu");
-		/* traitement d’erreur */
+				/* traitement d’erreur */
 			}
 
-			while((taille = read(socket_client, buffer, 256)) != -1){
+			while((taille = read(socket_client, buffer, 256)) != 0){
 				if(write(socket_client, buffer, taille)== -1){
-					perror("Erreur write retour");
+					perror("Erreur write retour de message");
 				/* traitement d’erreur */
 				}
 			}
+			if(taille == -1){
+				perror("Erreur read retour");
+			}
+			exit(EXIT_SUCCESS);
 		}else{
 			close(socket_client);
 		}
-		waitpid(pid);
+
 	}
 	return 1;
 }

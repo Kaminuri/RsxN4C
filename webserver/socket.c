@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 #include "socket.h"
 
 int creer_serveur(int port){
@@ -42,9 +44,20 @@ int creer_serveur(int port){
 
 	return socket_serveur;
 }
-void initialiser_signaux(){
-	if (signal(SIGPIPE , SIG_IGN) == SIG_ERR)
-	{
-		perror("signal");
+
+void traitement_signal(int sig){
+	printf("Signal %d reçu\n", sig);
+	waitpid(-1, &sig, WNOHANG);
+}
+void initialiser_signaux(void){
+	struct sigaction sa;
+	sa.sa_handler = traitement_signal;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+	if (sigaction(SIGCHLD , &sa, NULL) == -1){
+		perror("sigaction(SIGCHLD)");
 	}
+	/*if (signal(SIGPIPE , SIG_IGN) ==  SIG_ERR){
+		perror("signal");
+	}*/
 }
