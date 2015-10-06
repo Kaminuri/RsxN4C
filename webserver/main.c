@@ -10,8 +10,8 @@
 #include "socket.h"
 int main(){
 	int taille=0;
-	int socket_client, pid;
-	/*char buffer[256];*/
+	int socket_client, pid, tokenCounter = 0, pageOK = 1;
+	char s[256];
 	char str[1024];
 	FILE *f = NULL;
 	const char *message_bienvenue = "Bonjour, c'est un grand honneur de vous avoir sur notre serveur. Bienvenue à bord !\n";
@@ -34,8 +34,25 @@ int main(){
 				traitement d’erreur 
 			}*/
 			
-			while(fgets(str, sizeof(str), f)!=NULL ) {
-				printf("%s\n",str );
+			if(fgets(str, sizeof(str), f)) {
+				strcpy(s, str);
+				char* token = strtok(s, " ");
+				while (token) {
+					tokenCounter++;
+					if(!(tokenCounter == 1 && strcmp(token,"GET") == 0)){
+						printf("TOKEN 1\n");
+						pageOK = 0;
+					}
+					
+					if(!(tokenCounter == 3 && ( strcmp(token, "HTTP/1.1\r\n") == 0 || strcmp(token, "HTTP/1.0\r\n") == 0 ))){
+						printf("TOKEN 2\n");
+						pageOK = 0;
+					}
+					token = strtok(NULL, " ");
+				}
+				if(pageOK == 0){
+					fprintf(f, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n\r\n400 Bad request\r\n");
+				}
 			}
 			/*while((taille = read(socket_client, buffer, 256)) != 0){
 				if(write(socket_client, buffer, taille)== -1){
