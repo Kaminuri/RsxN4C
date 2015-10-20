@@ -8,11 +8,63 @@
 #include <string.h> 
 #include <unistd.h>
 #include "socket.h"
+
+char * fgets_or_exit (char * buffer , int size , FILE * stream) {
+	char * c;
+	if ((c = fgets(buffer, size, stream)) == NULL)
+		exit(1);
+
+	return c;
+}
+void send_status(FILE * client , int code , const char * reason_phrase) {
+	fprintf(client, "HTTP/1.1 %d %s \r\n", code, reason_phrase);	
+}
+int parse_http_request (const char * request_line , http_request * request) {
+	char methode[10];
+	char * url;
+	url = malloc(256);
+	if (url == NULL) {
+		return -1;
+	}
+	printf("Recu : %s \n", request_line);
+	if (sscanf(request_line, "%s %s HTTP/%d.%d", methode, url, &(*request).major_version, &(*request).minor_version) == 0){
+		return -1;
+	}
+	request->url = url;
+	printf("%d\n", strcmp(request->url, "/"));
+	if (strcmp(methode, "GET") == 0 && strcmp(request->url, "/") ==0){
+
+		(*request).method = HTTP_GET;
+	} else {
+		(*request).method = HTTP_UNSUPPORTED;
+		return 400;
+	}
+	return 1;
+}
+
+void skip_headers( FILE * f) {
+	char str[1024];
+	while (1){
+		fgets_or_exit(str, sizeof(str), f);
+		if ((str[0] == '\r' && str[1] == '\n') || str[0] =='\n') break;
+	} 
+}
+
+
+void send_response(FILE * client, int code, const char * reason_phrase, const char * message_body) {
+	send_status(client, code, reason_phrase);
+	int length = strlen(message_body);
+	fprintf(client, "Connection: close \r\nContent-Length: %d \r\nContent-type: text/plain\r\n\r\n%s", length, message_body);
+}
+
+
+
 int main(){
 	int taille=0;
-	int socket_client, pid, tokenCounter = 0, pageOK = 1;
-	char s[1024];
+	int socket_client, pid, erreur = 0;
+	
 	char str[1024];
+	http_request req;
 	FILE *f = NULL;
 	const char *message_bienvenue = "Bonjour, c'est un grand honneur de vous avoir sur notre serveur. Bienvenue à bord !\n";
 	int socket_serveur = creer_serveur(8080);
@@ -33,49 +85,47 @@ int main(){
 				perror("Erreur write bienvenu");
 				traitement d’erreur 
 			}*/
-			if(fgets(str, 1024/*sizeof(str)*/, f)) {
-				strcpy(s, str);
+			fgets_or_exit(str, sizeof(str), f);
+			if ((erreur=parse_http_request(str,&req)) == 1){
+				//erreur = 1;
+				/*strcpy(s, str);
 				char* token = strtok(s, " ");
 				while (token) {
 					tokenCounter++;
 					if(tokenCounter == 1 && !strcmp(token,"GET") == 0){
-						pageOK = 0;
+						erreur = 0;
 					}
 					if(tokenCounter ==2 && !strcmp(token, "/") ==0){
-						pageOK=0;
+						erreur=0;
 					}
 					if(tokenCounter == 3 && (strncmp(token, "HTTP/1.1",8) != 0 && strncmp(token, "HTTP/1.0",8) !=0)){
 						
-						pageOK = 0;
+						erreur = 0;
 					}
 					if(tokenCounter >=4){
 						printf("%s\n", token);
-					}
-					
+					}			
 					token = strtok(NULL, " ");
-				}
-				//	while(fgets(str, sizeof(str), f) != NULL) fprintf (stderr, "t");
-				fprintf(stderr,"z");
-				if(pageOK == 0){
 
-					fprintf(f, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n\r\n400 Bad request\r\n");
-					fflush(f);
-				}else{
-					//fprintf(stderr, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n %s \n\n", (int)strlen(message_bienvenue), message_bienvenue);
-					fprintf (stderr,"toto");
-					fprintf(f, "HTTP/1.1 200 OK\r\n");//Content-Length: %d\r\n\r\n %s \n\n", (int)strlen(message_bienvenue), message_bienvenue);
-					fflush(f);
-					fclose(f);
-				}
+				}*/
+				skip_headers(f);
 			}
+			if(erreur == 400){
 			
+				
+				fprintf(f, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n\r\n400 Bad request\r\n");
+				fflush(f);
+			}else{
+				fprintf(f, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s\r\n", (int)strlen(message_bienvenue)+2, message_bienvenue);
+				fflush(f);
+				fclose(f);
+			}
 			
 			/*while((taille = read(socket_client, buffer, 256)) != 0){
 				if(write(socket_client, buffer, taille)== -1){
 					perror("Erreur write retour de message");
 				}
 			}*/
-
 			exit(EXIT_SUCCESS);
 		}else{
 			close(socket_client);
