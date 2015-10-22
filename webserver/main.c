@@ -32,9 +32,14 @@ int parse_http_request (const char * request_line , http_request * request) {
 	}
 	request->url = url;
 	printf("%d\n", strcmp(request->url, "/"));
-	if (strcmp(methode, "GET") == 0 && strcmp(request->url, "/") ==0){
-
-		(*request).method = HTTP_GET;
+	if (strcmp(methode, "GET") == 0){
+		if (strcmp(request->url, "/") ==0){
+			(*request).method = HTTP_GET;
+		}
+		else {
+			(*request).method = HTTP_UNSUPPORTED;
+			return 404;
+		}
 	} else {
 		(*request).method = HTTP_UNSUPPORTED;
 		return 400;
@@ -55,6 +60,7 @@ void send_response(FILE * client, int code, const char * reason_phrase, const ch
 	send_status(client, code, reason_phrase);
 	int length = strlen(message_body);
 	fprintf(client, "Connection: close \r\nContent-Length: %d \r\nContent-type: text/plain\r\n\r\n%s", length, message_body);
+	fflush(client);
 }
 
 
@@ -86,7 +92,9 @@ int main(){
 				traitement d’erreur 
 			}*/
 			fgets_or_exit(str, sizeof(str), f);
-			if ((erreur=parse_http_request(str,&req)) == 1){
+			skip_headers(f);
+			erreur=parse_http_request(str,&req);
+				
 				//erreur = 1;
 				/*strcpy(s, str);
 				char* token = strtok(s, " ");
@@ -108,18 +116,17 @@ int main(){
 					token = strtok(NULL, " ");
 
 				}*/
-				skip_headers(f);
-			}
-			if(erreur == 400){
-			
-				
-				fprintf(f, "HTTP/1.1 400 Bad Request\r\nConnection: close\r\nContent-Length: 17\r\n\r\n400 Bad request\r\n");
-				fflush(f);
+			if(erreur == 404){
+				send_response(f,404,"Page not found","Page not found\r\n");
+			}else if(erreur == 400){
+				send_response(f,400,"Bad Request","Bad Request\r\n");
 			}else{
 				fprintf(f, "HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n%s\r\n", (int)strlen(message_bienvenue)+2, message_bienvenue);
-				fflush(f);
-				fclose(f);
 			}
+
+			fflush(f);
+			fclose(f);
+			
 			
 			/*while((taille = read(socket_client, buffer, 256)) != 0){
 				if(write(socket_client, buffer, taille)== -1){
